@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG Demo - 文档管理</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Vue.js -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.prod.js"></script>
+  <!-- Axios for API calls -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.4.0/dist/axios.min.js"></script>
+  <style>
+    .document-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="container mt-5">
+    <!-- 标题 -->
+    <h1 class="mb-4">RAG Demo - 文档管理</h1>
+    <!-- 导航 -->
+    <nav class="mb-4">
+      <a href="chat.html" class="btn btn-primary">前往对话页面</a>
+    </nav>
+    <!-- 文档管理区域 -->
+    <div class="card">
+      <div class="card-header">文档管理</div>
+      <div class="card-body">
+        <!-- 文档上传 -->
+        <div class="mb-3">
+          <label for="fileInput" class="form-label">上传文档</label>
+          <input type="file" class="form-control" id="fileInput" @change="handleFileUpload" accept=".pdf,.txt">
+        </div>
+        <!-- 文档列表 -->
+        <div class="document-list">
+          <ul class="list-group">
+            <li v-for="doc in documents" :key="doc.id" class="list-group-item d-flex justify-content-between align-items-center">
+              {{ doc.name }}
+              <button class="btn btn-danger btn-sm" @click="deleteDocument(doc.id)">删除</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+     // 全局设置 axios 的 baseURL
+     axios.defaults.baseURL = 'http://localhost:8000';
+
+    createApp({
+      data() {
+        return {
+          documents: [], // 存储文档列表
+        };
+      },
+      mounted() {
+        this.fetchDocuments();
+      },
+      methods: {
+        async fetchDocuments() {
+          try {
+            const response = await axios.get('api/documents');
+            this.documents = response.data;
+          } catch (error) {
+            console.error('获取文档列表失败:', error);
+            alert('获取文档列表失败！');
+          }
+        },
+        async handleFileUpload(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+
+          const formData = new FormData();
+          formData.append('file', file);
+
+          try {
+            await axios.post('api/upload', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            alert('文件上传成功！');
+            this.fetchDocuments();
+          } catch (error) {
+            console.error('文件上传失败:', error);
+            alert('文件上传失败！');
+          }
+        },
+        async deleteDocument(docId) {
+          try {
+            await axios.delete(`api/documents/${docId}`);
+            alert('文档删除成功！');
+            this.fetchDocuments();
+          } catch (error) {
+            console.error('删除文档失败:', error);
+            alert('删除文档失败！');
+          }
+        },
+      },
+    }).mount('#app');
+  </script>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
